@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chopagent
+      POSTGRES_PASSWORD: chopagent
+      POSTGRES_DB: chopagent
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://chopagent:chopagent@db:5432/chopagent
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
