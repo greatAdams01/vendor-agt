@@ -5,8 +5,9 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.models import Customer, MenuItem, Order, OrderItem
+from app.models import Customer, MenuItem, Order, OrderItem, Vendor
 from app.models.enums import EscalationReason, OrderStatus, PaymentStatus
+from app.services.delivery_fee_service import compute_delivery_fee
 from app.services.paystack import PaystackClient
 
 
@@ -36,8 +37,11 @@ class OrderService:
         vendor_id: int,
         line_items: list[dict],
         delivery_type: str = "delivery",
+        dropoff_latitude: float | None = None,
+        dropoff_longitude: float | None = None,
     ) -> dict:
         """Price a current menu cart. Returns a preview dict WITHOUT persisting."""
+        vendor = self.db.query(Vendor).filter(Vendor.id == vendor_id).first()
         subtotal = Decimal("0")
         items: list[dict] = []
         for line in line_items:
@@ -55,17 +59,25 @@ class OrderService:
                     "quantity": qty,
                     "unit_price": unit_price,
                     "notes": line.get("notes"),
+                    "id": menu_item.id if menu_item else None,
                 }
             )
             subtotal += unit_price * qty
-        # TODO: real delivery fee by location. Flat default for now.
-        delivery_fee = Decimal("500") if delivery_type == "delivery" else Decimal("0")
+        if delivery_type == "delivery":
+            delivery_fee, distance_km = compute_delivery_fee(
+                vendor=vendor,
+                dropoff_latitude=dropoff_latitude,
+                dropoff_longitude=dropoff_longitude,
+            )
+        else:
+            delivery_fee, distance_km = Decimal("0"), None
         return {
             "items": items,
             "subtotal": subtotal,
             "delivery_fee": delivery_fee,
             "total": subtotal + delivery_fee,
             "delivery_type": delivery_type,
+            "distance_km": distance_km,
         }
 
     def persist_order(
@@ -79,6 +91,8 @@ class OrderService:
         delivery_address: str | None = None,
         notes: str | None = None,
         escalation: EscalationReason | None = None,
+        dropoff_latitude: float | None = None,
+        dropoff_longitude: float | None = None,
     ) -> Order:
         preview = preview or self.build_preview(vendor_id, line_items)
         customer = self.get_or_create_customer(wa_phone, customer_name)
@@ -99,6 +113,9 @@ class OrderService:
             currency="NGN",
             customer_notes=notes,
             escalation_reason=escalation.value if escalation else None,
+            dropoff_latitude=dropoff_latitude,
+            dropoff_longitude=dropoff_longitude,
+            distance_km=preview.get("distance_km"),
         )
         self.db.add(order)
         self.db.flush()
@@ -119,6 +136,20 @@ class OrderService:
 
     def get_order(self, order_id: int) -> Order | None:
         return self.db.query(Order).filter(Order.id == order_id).first()
+
+    def update_delivery_fee(self, order_id: int, fee: Decimal) -> Order | None:
+        """Vendor-issued override of the dispatch-rider fee on an existing order.
+
+        Recomputes the total and returns the updated order, or None if unknown.
+        """
+        order = self.db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            return None
+        order.delivery_fee = fee
+        order.total = order.subtotal + fee
+        self.db.commit()
+        self.db.refresh(order)
+        return order
 
     async def initiate_payment(self, order: Order, customer_email: str) -> dict[str, str]:
         """Create a Paystack transaction, store its reference, return checkout URL."""

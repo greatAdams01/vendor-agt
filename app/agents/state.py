@@ -27,6 +27,8 @@ class OrderState(TypedDict, total=False):
     escalation_note: str | None
     delivery_type: str
     delivery_address: str | None
+    dropoff_latitude: float | None
+    dropoff_longitude: float | None
 
     # totals (kobo, integer)
     subtotal: int

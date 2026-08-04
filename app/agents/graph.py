@@ -118,7 +118,11 @@ class OrderFlow:
 
     async def confirm_node(self, state: OrderState) -> OrderState:
         preview = self.order_svc.build_preview(
-            self.vendor.id, state["line_items"], state["delivery_type"]
+            self.vendor.id,
+            state["line_items"],
+            state["delivery_type"],
+            state.get("dropoff_latitude"),
+            state.get("dropoff_longitude"),
         )
         state.update(self._preview_to_state(preview))
         order = self.order_svc.persist_order(
@@ -129,6 +133,8 @@ class OrderFlow:
             preview=preview,
             delivery_address=state.get("delivery_address"),
             notes=state.get("customer_text"),
+            dropoff_latitude=state.get("dropoff_latitude"),
+            dropoff_longitude=state.get("dropoff_longitude"),
         )
         state["order_id"] = order.id
         state["reply"] = self._confirm_message(order, preview)
@@ -156,6 +162,8 @@ class OrderFlow:
             delivery_address=state.get("delivery_address"),
             notes=state.get("customer_text"),
             escalation=state["escalation"],
+            dropoff_latitude=state.get("dropoff_latitude"),
+            dropoff_longitude=state.get("dropoff_longitude"),
         )
         state["order_id"] = order.id
         await self.alerts.send(
@@ -188,10 +196,12 @@ class OrderFlow:
             f"{i['quantity']}x {i['name']}" + (f" ({i['notes']})" if i.get("notes") else "")
             for i in preview["items"]
         )
+        distance = preview.get("distance_km")
+        distance_txt = f" ({distance:.1f} km)" if distance is not None else ""
         return (
             f"Your order (ref #{order.id}):\n{item_lines}\n"
             f"Subtotal: {_naira(preview['subtotal'])}\n"
-            f"Delivery: {_naira(preview['delivery_fee'])}\n"
+            f"Delivery fee{distance_txt}: {_naira(preview['delivery_fee'])}\n"
             f"Total: {_naira(preview['total'])}"
         )
 

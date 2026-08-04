@@ -17,6 +17,10 @@ def main() -> None:
             name="Madam Grace Kitchen",
             whatsapp_business_phone="+2348000000000",
             alert_phone="+2348000000000",
+            delivery_base_fee=Decimal("1000"),
+            delivery_rate_per_km=Decimal("300"),
+            vendor_latitude=6.5244,  # Yaba, Lagos
+            vendor_longitude=3.3792,
         )
         db.add(vendor)
         db.flush()

@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     Numeric,
@@ -29,6 +30,12 @@ class Vendor(Base):
     alert_phone = Column(String(20), nullable=False)  # E.164 for payment/custom alerts
     alert_webhook_url = Column(Text, nullable=True)  # optional alternative alert target
     currency = Column(String(3), default="NGN", nullable=False)
+
+    # Dispatch-rider fee config (distance-based, editable by the vendor)
+    delivery_base_fee = Column(Numeric(10, 2), default=0, nullable=False)
+    delivery_rate_per_km = Column(Numeric(10, 2), default=0, nullable=False)
+    vendor_latitude = Column(Float, nullable=True)
+    vendor_longitude = Column(Float, nullable=True)
 
     menu_items = relationship("MenuItem", back_populates="vendor", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="vendor")
@@ -78,6 +85,11 @@ class Order(Base):
     subtotal = Column(Numeric(10, 2), default=0, nullable=False)
     total = Column(Numeric(10, 2), default=0, nullable=False)
     currency = Column(String(3), default="NGN")
+
+    # Customer drop-off point (WhatsApp location share) + computed distance
+    dropoff_latitude = Column(Float, nullable=True)
+    dropoff_longitude = Column(Float, nullable=True)
+    distance_km = Column(Numeric(10, 2), nullable=True)
 
     reference = Column(String(100), unique=True, nullable=True)  # Paystack order reference
     customer_notes = Column(Text, nullable=True)  # raw message / unique request detail

@@ -72,3 +72,43 @@ uvicorn app.main:app --reload
 
 Haulage/rider tracking, split payments for group orders, loyalty system.
 SMS vendor alerts plug into `VendorAlertService._send_sms`.
+
+---
+
+## WhatsApp-only operation (no website)
+
+The whole system runs over WhatsApp for **both** customers and the vendor.
+The vendor never touches a dashboard — they drive their shop from the same
+bot. Operator identity is matched by phone number (`Vendor.alert_phone` /
+`whatsapp_business_phone`).
+
+### Vendor commands
+
+| Command | Action |
+| --- | --- |
+| `orders` | List recent orders |
+| `open <id>` | View an order + Ready / Dispatch / Delivered buttons |
+| `ready` / `dispatch` / `done <id>` | Advance an order (notifies customer) |
+| `fee <id> <amount>` | Edit the dispatch-rider fee (notifies customer) |
+| `menu` | Show menu |
+| `add <name> <price>` | Add a dish |
+| `soldout <name>` / `onsale <name>` | Toggle availability |
+| `pricing <base> <rate>` | Set delivery base fee + per-km rate |
+| `setloc <lat> <lng>` | Set shop coordinates |
+| `broadcast <text>` | Promo message to all customers (template) |
+| `help` | Show commands |
+
+### Customer location & distance-based dispatch fee
+
+Customers share their WhatsApp location; the bot computes the distance
+(Haversine) from the vendor's coordinates and prices the rider fee as
+`base_fee + rate_per_km × km`. The vendor can override any order's fee with
+`fee <id> <amount>`. Flat `₦500` is used as a fallback when no coordinates
+exist.
+
+### Message templates
+
+Proactive sends (new-order pings, on-the-way, delivered, fee updates,
+broadcasts) require **pre-approved WhatsApp templates** configured via the
+`WHATSAPP_TEMPLATE_*` env vars. Out-of-window sends fall back to plain text
+in development.

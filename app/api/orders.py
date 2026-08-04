@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.config import get_settings
 from app.models import Order, Vendor
 from app.models.enums import OrderStatus
 from app.services.whatsapp import WhatsAppClient
@@ -64,8 +65,10 @@ async def update_order_status(
 
     if body.status == OrderStatus.DISPATCHED:
         # Per the PRD flow: vendor marks Dispatched -> customer gets a WhatsApp update.
-        await WhatsAppClient().send_text(
+        settings = get_settings()
+        await WhatsAppClient().send_templated_or_text(
             order.customer.whatsapp_phone,
+            settings.whatsapp_template_on_the_way,
             f"Your order (ref #{order.id}) is on the way! \ud83d\ude9a",
         )
     return {"ok": True, "status": order.status}
