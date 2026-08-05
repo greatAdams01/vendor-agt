@@ -73,7 +73,7 @@ class OrderFlow:
         builder.add_conditional_edges(
             "intent",
             self._route_intent,
-            {"MENU": "intro", "ORDER": "parse"},
+            {"MENU": "intro", "ORDER": "parse", "CLOSED": END},
         )
         builder.add_edge("intro", END)
         builder.add_conditional_edges(
@@ -106,6 +106,9 @@ class OrderFlow:
             state["_intent"] = "MENU"
         else:
             state["_intent"] = "ORDER"
+        if state["_intent"] == "ORDER" and not self.vendor.is_available:
+            state["_intent"] = "CLOSED"
+            state["reply"] = self._closed_message()
         return state
 
     @staticmethod
@@ -186,11 +189,20 @@ class OrderFlow:
         return state
 
     # -------------------------------------------------------------- formatting
+    def _closed_message(self) -> str:
+        return (
+            f"Sorry \u2014 {self.vendor.name} is currently *closed* and not taking "
+            "new orders right now. I'll let you know as soon as they open again. "
+            "Reply *menu* anytime to browse."
+        )
+
     def _greeting_message(self) -> str:
         lines = [
             f"Welcome to {self.vendor.name}! \ud83c\udf5b",
             "Here's today's menu:",
         ]
+        if not self.vendor.is_available:
+            lines.append("\u26d4 *Shop currently closed* \u2014 no new orders right now.")
         for m in self.menu:
             lines.append(f"\u2022 {m.name} \u2014 {_naira(m.price)}")
         lines.append("\nJust tell me what you'd like, e.g. *2 x Jollof and turkey*.")

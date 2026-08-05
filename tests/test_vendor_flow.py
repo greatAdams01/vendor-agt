@@ -70,6 +70,7 @@ def _flow(db, wa) -> VendorFlow:
     vendor = Vendor(
         alert_phone="+2348000000000",
         name="Madam Grace Kitchen",
+        is_available=True,
         delivery_base_fee=Decimal("1000"),
         delivery_rate_per_km=Decimal("300"),
         vendor_latitude=6.5244,
@@ -135,3 +136,28 @@ def test_fee_command_overrides_delivery_fee():
     assert order.delivery_fee == Decimal("1200")
     assert order.total == Decimal("3700")
     wa.send_templated_or_text.assert_awaited_once()
+
+
+def test_close_command_marks_vendor_unavailable():
+    wa = AsyncMock()
+    db = FakeDB([_order(1)])
+    flow = _flow(db, wa)
+    assert flow.vendor.is_available is True
+
+    asyncio.run(flow.handle("+2348000000000", "close"))
+    assert flow.vendor.is_available is False
+    assert db.committed == 1
+    text = wa.send_text.await_args.args[1]
+    assert "closed" in text.lower()
+
+
+def test_open_command_marks_vendor_available():
+    wa = AsyncMock()
+    db = FakeDB([_order(1)])
+    flow = _flow(db, wa)
+    flow.vendor.is_available = False
+
+    asyncio.run(flow.handle("+2348000000000", "open shop"))
+    assert flow.vendor.is_available is True
+    text = wa.send_text.await_args.args[1]
+    assert "open" in text.lower()

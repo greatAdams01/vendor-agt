@@ -57,6 +57,8 @@ uvicorn app.main:app --reload
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| GET | `/api/v1/vendors/{vendor_id}` | Vendor status (incl. `is_available`) |
+| PATCH | `/api/v1/vendors/{vendor_id}/availability` | Open/close the shop (`{"is_available": bool}`) |
 | GET | `/api/v1/vendors/{id}/orders` | Dashboard order list (filter `?status=paid`) |
 | PATCH | `/api/v1/vendors/{id}/orders/{oid}` | Set status; `dispatched` sends customer update |
 | GET/POST | `/api/v1/vendors/{id}/menu` | Read / add menu items |
@@ -91,6 +93,7 @@ bot. Operator identity is matched by phone number (`Vendor.alert_phone` /
 | `ready` / `dispatch` / `done <id>` | Advance an order (notifies customer) |
 | `fee <id> <amount>` | Edit the dispatch-rider fee (notifies customer) |
 | `menu` | Show menu |
+| `open` / `close` | Pause or resume taking new orders (customers can't pay while closed) |
 | `add <name> <price>` | Add a dish |
 | `soldout <name>` / `onsale <name>` | Toggle availability |
 | `pricing <base> <rate>` | Set delivery base fee + per-km rate |

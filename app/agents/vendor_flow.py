@@ -50,6 +50,10 @@ class VendorFlow:
             return await self._reply(self._list_orders())
         if lowered in ("menu", "show menu"):
             return await self._reply(self._menu_lines())
+        if lowered in ("open", "open shop", "available", "start selling"):
+            return await self._set_availability(True)
+        if lowered in ("close", "close shop", "closed", "unavailable", "stop taking orders"):
+            return await self._set_availability(False)
         if re.fullmatch(r"(ready|preparing)\s+#?\d+", lowered):
             return await self._set_status(lowered, OrderStatus.PREPARING)
         if re.fullmatch(r"dispatch\s+#?\d+", lowered):
@@ -74,6 +78,20 @@ class VendorFlow:
         await self._reply(
             "I didn't get that. Reply *help* to see what I can do."
         )
+
+    # ------------------------------------------------------------- availability
+    async def _set_availability(self, is_available: bool) -> None:
+        self.vendor.is_available = is_available
+        self.db.commit()
+        if is_available:
+            await self._reply(
+                "\U0001f4c2 Your shop is now *open* \u2014 customers can order and pay."
+            )
+        else:
+            await self._reply(
+                "\U0001f6aa Your shop is now *closed* \u2014 new orders will be paused "
+                "until you open again. Existing orders are unaffected."
+            )
 
     # ------------------------------------------------------------ order commands
     def _list_orders(self) -> str:
@@ -301,6 +319,7 @@ class VendorFlow:
             "*ready / dispatch / done <id>* \u2014 advance an order\n"
             "*fee <id> <amount>* \u2014 edit the rider fee\n"
             "*menu* \u2014 show menu\n"
+            "*open* / *close* \u2014 pause or resume taking orders\n"
             "*add <name> <price>* \u2014 add a dish\n"
             "*soldout <name>* / *onsale <name>* \u2014 toggle availability\n"
             "*pricing <base> <rate>* \u2014 set delivery base + per-km fee\n"

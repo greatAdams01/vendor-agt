@@ -26,6 +26,7 @@ class Vendor(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
+    is_available = Column(Boolean, default=True, nullable=False)  # accepts orders?
     whatsapp_business_phone = Column(String(20))
     alert_phone = Column(String(20), nullable=False)  # E.164 for payment/custom alerts
     alert_webhook_url = Column(Text, nullable=True)  # optional alternative alert target
