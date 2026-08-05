@@ -23,6 +23,25 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "app": settings.app_name}
 
+    @app.get("/")
+    def index() -> dict:
+        spec = app.openapi()
+        endpoints = sorted(
+            {
+                f"{method.upper()} {path}"
+                for path, ops in spec["paths"].items()
+                for method in ops
+                if path.startswith("/api")
+            }
+        )
+        return {
+            "app": settings.app_name,
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "health": "/health",
+            "endpoints": endpoints,
+        }
+
     return app
 
 
