@@ -30,7 +30,7 @@ Agents map to the PRD:
 ## Stack
 
 - **FastAPI** backend, **SQLAlchemy 2** + PostgreSQL
-- **LangGraph** for the agent state graph (OpenAI `gpt-4o` does order parsing)
+- **LangGraph** for the agent state graph (an OpenAI-compatible LLM — `gpt-4o` by default, configurable via `LLM_MODEL` — does order parsing)
 - **WhatsApp Cloud API** (inbound webhook + outbound text)
 - **Paystack** for payments (initialized link + signed webhook)
 - Vendor alerts over WhatsApp or a configurable webhook
@@ -38,7 +38,7 @@ Agents map to the PRD:
 ## Getting started
 
 ```bash
-cp .env.example .env          # add your WHATSAPP_TOKEN, OPENAI_API_KEY, PAYSTACK_SECRET_KEY
+cp .env.example .env          # add your WHATSAPP_TOKEN, LLM_API_KEY, PAYSTACK_SECRET_KEY
 docker compose up -d db       # Postgres only (or point DATABASE_URL at a hosted DB)
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"

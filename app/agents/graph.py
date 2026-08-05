@@ -53,7 +53,12 @@ class OrderFlow:
             .order_by(MenuItem.id)
             .all()
         )
-        self._model = ChatOpenAI(model="gpt-4o", temperature=0)
+        self._model = ChatOpenAI(
+            model=self.settings.llm_model,
+            temperature=0,
+            api_key=self.settings.llm_api_key or None,
+            base_url=self.settings.llm_base_url or None,
+        )
 
     # ------------------------------------------------------------- graph build
     def build(self):

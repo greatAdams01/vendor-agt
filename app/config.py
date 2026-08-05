@@ -28,8 +28,11 @@ class Settings(BaseSettings):
     whatsapp_template_fee_updated: str = "dispatch_fee_updated"
     whatsapp_template_promo: str = "promo_broadcast"
 
-    # OpenAI (used by LangGraph agents)
-    openai_api_key: str = ""
+    # AI model (used by LangGraph agents). AgentRouter is an OpenAI-compatible
+    # gateway (https://agentrouter.org/v1) so ChatOpenAI works against it.
+    llm_api_key: str = ""
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_model: str = "gpt-4o"
 
     # Paystack
     paystack_secret_key: str = ""
