@@ -6,6 +6,7 @@ import json
 from decimal import Decimal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.agents.graph import OrderFlow
@@ -84,6 +85,24 @@ async def whatsapp_webhook(
                             handle_inbound_message, db, wa_phone, f"{cmd} #{arg}"
                         )
     return {"status": "received"}
+
+
+class MessageSimulate(BaseModel):
+    wa_phone: str
+    text: str
+
+
+@router.post("/simulate")
+async def simulate_message(
+    body: MessageSimulate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Debug endpoint to trigger the LangGraph agent directly."""
+    background_tasks.add_task(
+        handle_inbound_message, db, body.wa_phone, body.text
+    )
+    return {"status": "simulated", "message": f"Simulating message from {body.wa_phone}"}
 
 
 def _resolve_vendor(db: Session) -> Vendor | None:

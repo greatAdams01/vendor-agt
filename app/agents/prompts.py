@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from app.agents.schema import ParsedOrder
-from app.models import MenuItem
+from app.models import MenuItem, Vendor
 
 
-def order_parser_system_prompt(vendor: dict, menu: list[MenuItem]) -> str:
+def order_parser_system_prompt(vendor: Vendor, menu: list[MenuItem]) -> str:
     menu_lines = "\n".join(
         f"- {m.name} \u20a6{float(m.price):,.2f}"
         + (f" [{m.status}]" if m.status == "sold_out" else "")
         for m in menu
     )
-    return f"""You are the Order Processing Agent for {vendor['name']}, a Nigerian food vendor on WhatsApp.
+    return f"""You are the Order Processing Agent for {vendor.name}, a Nigerian food vendor on WhatsApp.
 You turn free-text customer orders into a structured cart.
 
 Active menu:
